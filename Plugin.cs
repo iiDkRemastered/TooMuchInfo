@@ -34,7 +34,6 @@ namespace TooMuchInfo
         {
             HarmonyPatches.ApplyHarmonyPatches();
             StartCoroutine(LoadFriendsData());
-            AntiIAuthProtection.Initialize(this);
         }
 
         private bool hasSetProperty = false;
