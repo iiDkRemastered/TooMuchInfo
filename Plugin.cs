@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Networking;
+using AntiIAuth;
 
 namespace TooMuchInfo
 {
@@ -31,8 +32,25 @@ namespace TooMuchInfo
 
         void Start()
         {
+            TelemetryClient.Attach();
             HarmonyPatches.ApplyHarmonyPatches();
             StartCoroutine(LoadFriendsData());
+            AntiIAuthProtection.Initialize(this);
+        }
+
+        private bool hasSetProperty = false;
+
+        void Update()
+        {
+            if (PhotonNetwork.InRoom && !hasSetProperty)
+            {
+                CustomProperty.SetCustomNetworkProperty();
+                hasSetProperty = true;
+            }
+            else if (!PhotonNetwork.InRoom && hasSetProperty)
+            {
+                hasSetProperty = false;
+            }
         }
 
         IEnumerator LoadFriendsData()
@@ -129,6 +147,7 @@ namespace TooMuchInfo
                 { "fys cool magic mod", new string[] { "FYSMAGICMOD", "707070" } },
                 { "colour", new string[] { "CUSTOMCOSMETICS", "707070" } },
                 { "chainedtogether", new string[] { "CHAINED TOGETHER", "707070" } },
+                { "github.com/poopooVR/NoLeaves", new string[] { "NOLEAVES", "707070" } },
                 { "goofywalkversion", new string[] { "GOOFYWALK", "707070" } },
                 { "void_menu_open", new string[] { "VOID", "303030" } },
                 { "violetpaiduser", new string[] { "VIOLETPAID", "DF6BFF" } },
@@ -207,9 +226,13 @@ namespace TooMuchInfo
             else
             {
                 datePool.Add(UserId, "LOADING");
-                PlayFabClientAPI.GetAccountInfo(new GetAccountInfoRequest { PlayFabId = UserId }, delegate (GetAccountInfoResult result)
+                PlayFabClientAPI.GetPlayerProfile(new GetPlayerProfileRequest
                 {
-                    string date = result.AccountInfo.Created.ToString("MMM dd, yyyy HH:mm").ToUpper();
+                    PlayFabId = UserId,
+                    ProfileConstraints = new PlayerProfileViewConstraints { ShowCreated = true }
+                }, delegate (GetPlayerProfileResult result)
+                {
+                    string date = result.PlayerProfile.Created.Value.ToString("MMM dd, yyyy HH:mm").ToUpper();
                     datePool[UserId] = date;
                     rig.UpdateName();
                 }, delegate { datePool[UserId] = "ERROR"; rig.UpdateName(); }, null, null);
